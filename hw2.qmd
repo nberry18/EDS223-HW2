@@ -9,9 +9,43 @@ library(viridisLite)
 ```
 
 ```{r}
+# EJ Screen
 ejscreen <- sf::st_read(here::here("data", "EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb")) 
 
-crashes <- read_csv(here::here("data", "Crashes.csv"))
+# filter to California
+california <- ejscreen %>%
+  dplyr::filter(ST_ABBREV == "CA") 
 
-inequality_la <- sf::st_read(here::here("data", "mapping-inequality-los-angeles.json"))
+# filter to Los Angeles County 
+los_angeles <- ejscreen %>%
+  dplyr::filter(CNTY_NAME %in% c("Los Angeles County"))
+
+# Crashes dataset
+crashes <- read_csv(here::here("data", "Crashes.csv")) |>  
+  as_tibble() |>
+  drop_na(LATITUDE) |>
+  drop_na(LONGITUDE) |> 
+  st_as_sf(coords = c("LONGITUDE", "LATITUDE"), crs = 3857)
+
+# LA Redlining dataset
+redlining_la <- sf::st_read(here::here("data", "mapping-inequality-los-angeles.json"))
 ```
+
+```{r}
+# Check CRS for each dataset
+st_crs(ejscreen)
+st_crs(redlining_la)
+st_crs(crashes)
+
+# Transform Redlining LA dataset into same CRS as EJScreen dataset
+redlining_la <- st_transform(redlining_la, crs = st_crs(ejscreen))
+
+# Boolen check if CRS match between 2 datasets
+st_crs(ejscreen) == st_crs(redlining_la)
+st_crs(ejscreen) == st_crs(crashes)
+```
+
+```{r}
+
+```
+
