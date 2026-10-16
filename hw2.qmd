@@ -1,0 +1,17 @@
+
+```{r}
+library(tidyverse)
+library(sf)
+library(here)
+library(tmap)
+library(stars)
+library(viridisLite)
+```
+
+```{r}
+ejscreen <- sf::st_read(here::here("data", "EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb")) 
+
+crashes <- read_csv(here::here("data", "Crashes.csv"))
+
+inequality_la <- sf::st_read(here::here("data", "mapping-inequality-los-angeles.json"))
+```
