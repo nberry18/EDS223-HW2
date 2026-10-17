@@ -6,6 +6,7 @@ library(here)
 library(tmap)
 library(stars)
 library(viridisLite)
+library(knitr)
 ```
 
 ```{r}
@@ -33,19 +34,88 @@ redlining_la <- sf::st_read(here::here("data", "mapping-inequality-los-angeles.j
 
 ```{r}
 # Check CRS for each dataset
-st_crs(ejscreen)
+st_crs(los_angeles)
 st_crs(redlining_la)
 st_crs(crashes)
 
 # Transform Redlining LA dataset into same CRS as EJScreen dataset
-redlining_la <- st_transform(redlining_la, crs = st_crs(ejscreen))
+redlining_la <- st_transform(redlining_la, crs = st_crs(los_angeles))
 
 # Boolen check if CRS match between 2 datasets
-st_crs(ejscreen) == st_crs(redlining_la)
-st_crs(ejscreen) == st_crs(crashes)
+st_crs(los_angeles) == st_crs(redlining_la)
+st_crs(los_angeles) == st_crs(crashes)
 ```
+
+
 
 ```{r}
+tm_shape(redlining_la) +
+  tm_polygons(fill = "grade",
+    title = "HOLC Residential Grade of Perceived Risk",
+    palette = c(
+      "A" = "#1a63e0",
+      "B" = "#20e050",
+      "C" = "#ffff77",
+      "D" = "#e01044",
+      "Missing" = "#c8c1c3"
+  )) +
+  tm_title("Historical Redlining in Los Angeles, California") +
+  tm_basemap("OpenStreetMap", alpha = 0.6) 
+```
+
+Create table summary of HOLC grades and census blocks
+
+```{r}
+join_ejscreen_redlining <- st_join(los_angeles, redlining_la)
+
+ejscreen_redlining <- st_drop_geometry(join_ejscreen_redlining)
+
+glimpse(ejscreen_redlining)
+
+# the percent of census black groups that don’t fall within a HOLC grade in your table
+
+ejscreen_redlining_percent <- ejscreen_redlining |>
+  mutate(
+    grade = ifelse(is.na(grade), "No HOLC Grade", grade)
+  ) |>
+  count(grade) |>
+  mutate(percent = (n / sum(n)) * 100)
 
 ```
 
+
+|grade         |    n|  percent|
+|:-------------|----:|--------:|
+|A             |  449|  4.99555|
+|B             | 1239| 13.78505|
+|C             | 3058| 34.02314|
+|D             | 1346| 14.97552|
+|No HOLC Grade | 2896| 32.22074|
+
+Create at least two visualizations summarizing current conditions (from the EJScreen data) within HOLC grades using the mean of the following variables (you may combine variables in a single visualization or look at a single variable per plot)
+
+Use ggplot for your visualizations! You will first need to calculate mean of each variable grouped by HOLC grade.
+
+```{r}
+PM25_grade <- ejscreen_redlining |> 
+  group_by(grade) |> 
+  summarise(PM25 = mean(PM25))
+
+ggplot(PM25_grade, mapping = aes(x = grade, y = PM25)) +
+  geom_col()
+
+life_exp_grade <- ejscreen_redlining |> 
+  group_by(grade) |> 
+  summarise(life_exp = mean(LIFEEXPPCT))
+
+ggplot(life_exp_grade, mapping = aes(x = grade, y = life_exp)) +
+  geom_col()
+
+low_income_grade <- ejscreen_redlining |> 
+  group_by(grade) |> 
+  summarise(low_income = (mean(LOWINCPCT) * 100))
+
+ggplot(low_income_grade, mapping = aes(x = grade, y = low_income)) +
+  geom_col()
+
+```
