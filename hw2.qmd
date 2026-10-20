@@ -7,6 +7,7 @@ library(tmap)
 library(stars)
 library(viridisLite)
 library(knitr)
+library(gt)
 ```
 
 ```{r}
@@ -24,9 +25,10 @@ los_angeles <- ejscreen %>%
 # Crashes dataset
 crashes <- read_csv(here::here("data", "Crashes.csv")) |>  
   as_tibble() |>
-  drop_na(LATITUDE) |>
-  drop_na(LONGITUDE) |> 
-  st_as_sf(coords = c("LONGITUDE", "LATITUDE"), crs = 3857)
+  drop_na(POINT_X) |>
+  drop_na(POINT_Y) |> 
+  st_as_sf(coords = c("POINT_X", "POINT_Y"), crs = 4326, remove = FALSE) |> 
+  st_transform(crs = st_crs(los_angeles))
 
 # LA Redlining dataset
 redlining_la <- sf::st_read(here::here("data", "mapping-inequality-los-angeles.json"))
@@ -46,19 +48,21 @@ st_crs(los_angeles) == st_crs(redlining_la)
 st_crs(los_angeles) == st_crs(crashes)
 ```
 
-
+```{r}
+holc_palette <- c(
+      "A" = "#1a63e0",
+      "B" = "#20e050",
+      "C" = "#ffff77",
+      "D" = "#e01044",
+      "Missing" = "#c8c1c3")
+```
 
 ```{r}
 tm_shape(redlining_la) +
   tm_polygons(fill = "grade",
     title = "HOLC Residential Grade of Perceived Risk",
-    palette = c(
-      "A" = "#1a63e0",
-      "B" = "#20e050",
-      "C" = "#ffff77",
-      "D" = "#e01044",
-      "Missing" = "#c8c1c3"
-  )) +
+    palette = holc_palette
+  ) +
   tm_title("Historical Redlining in Los Angeles, California") +
   tm_basemap("OpenStreetMap", alpha = 0.6) 
 ```
@@ -81,6 +85,8 @@ ejscreen_redlining_percent <- ejscreen_redlining |>
   count(grade) |>
   mutate(percent = (n / sum(n)) * 100)
 
+gt(ejscreen_redlining_percent)
+
 ```
 
 
@@ -99,23 +105,56 @@ Use ggplot for your visualizations! You will first need to calculate mean of eac
 ```{r}
 PM25_grade <- ejscreen_redlining |> 
   group_by(grade) |> 
-  summarise(PM25 = mean(PM25))
+  summarise(PM25 = mean(PM25), na.rm = TRUE)
 
 ggplot(PM25_grade, mapping = aes(x = grade, y = PM25)) +
   geom_col()
 
 life_exp_grade <- ejscreen_redlining |> 
   group_by(grade) |> 
-  summarise(life_exp = mean(LIFEEXPPCT))
+  summarise(life_exp = mean(LIFEEXPPCT, na.rm = TRUE))
 
 ggplot(life_exp_grade, mapping = aes(x = grade, y = life_exp)) +
   geom_col()
 
 low_income_grade <- ejscreen_redlining |> 
   group_by(grade) |> 
-  summarise(low_income = (mean(LOWINCPCT) * 100))
+  summarise(low_income = (mean(LOWINCPCT) * 100), na.rm = TRUE)
 
 ggplot(low_income_grade, mapping = aes(x = grade, y = low_income)) +
   geom_col()
+
+```
+
+```{r}
+
+# A figure summarizing the percent of observations within redlined neighborhoods within each HOLC grade
+
+# Filter to two columns I want
+select_crashes <- crashes |> 
+  select(POINT_X, POINT_Y, PEDESTRIAN_ACCIDENT, BICYCLE_ACCIDENT)
+
+# drop na or change them under a different name?
+
+select_crashes <- select_crashes |> 
+  mutate(PEDESTRIAN_ACCIDENT = ifelse(is.na(PEDESTRIAN_ACCIDENT), "No accident", PEDESTRIAN_ACCIDENT)) |> 
+  mutate(BICYCLE_ACCIDENT = ifelse(is.na(BICYCLE_ACCIDENT), "No accident", BICYCLE_ACCIDENT))
+
+# join datasets/ drop geometry
+
+join_crashes_redlining <- st_join(select_crashes, redlining_la) |> 
+  st_drop_geometry()
+
+# Percent table
+
+crashes_redlining_percent <- join_crashes_redlining |>
+  mutate(
+    grade = ifelse(is.na(grade), "No HOLC Grade", grade)
+  ) |> 
+  filter(PEDESTRIAN_ACCIDENT == "Y" | BICYCLE_ACCIDENT == "Y") |>
+  count(grade) |>
+  mutate(percent = (n / sum(n)) * 100)
+
+gt(crashes_redlining_percent)
 
 ```
