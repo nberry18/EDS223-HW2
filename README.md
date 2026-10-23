@@ -4,12 +4,12 @@
 
 
 ## Purpose
-This repository contains two maps of Yakima County in Washington State that help identify potential environmental justice concerns. Environmental justice seeks to ensure that all communities are protected from disproportionate environmental burdens that historically have been overlooked contributing to unequal exposure to pollution and environmental hazards. This repository examines whether higher concentrations of PM2.5 are associated with areas in Yakima County that have larger populations of low-income residents and communities of color.
+This repository contains an analysis of redlining in Los Angeles, CA. Redlined neighborhoods are neighborhoods that were historically marked as risky for mortgage lending because of racist and classist policies that discriminated against residents based on their racial, ethnic, and/ or economic background. These discriminatory practices contributed to environmental injustice, as redlined areas often experienced greater environmental burdens. This repository explores the relationship between historical HOLC grades (A-D) and present-day socioeconomic and environmental conditions, including low-income households, low life expectancy, and pedestrian and bicycle accident reporting, to evaluate whether disparities persist across neighborhoods.
 
 ## Overview
 Highlights:
-- hw2.qmd file: Code for the two maps of Yakima County. The first map displays the EJScreen Demographic Index, highlighting low-income communities and communities of color. The second map shows PM2.5 concentrations, which measure fine particulate matter 2.5 micrometers or smaller in diameter, across the county. 
-- Data folder: houses EJ Screen data, EJ Screen data index, and the technical document of the EJ Screen data.
+- hw2.qmd file: The first section contains code to create a map of historical redlining neighborhoods in Los Angeles, California, colored by HOLC grade. The second section contains code for a table describing the percentage of census block groups that fall within each HOLC grade. The next section explores the relationship between EJScreen indicators, specifically Low-Income Households and Low Life Expectancy, and historical redlining patterns in LA. The final section contains code for a figure summarizing the percentage of pedestrian and bicycle crash observations located within neighborhoods associated with each HOLC grade.
+- Data folder: houses EJ Screen data, Crashes.csv, EJ Screen data index, the technical document of the EJ Screen data, and mapping-inequality-los-angeles.json.
 
 ```{r}
 EDS223-HW1
@@ -19,7 +19,7 @@ EDS223-HW1
          EJSCREEN_2023_BG_Columns.xlsx
          ejscreen-tech-doc-version-2-2.pdf
          mapping-inequality-los-angeles.json
-├── ej_files
+├── hw2_files
 |        figure-html
 |        libs
 │   hw2.html
