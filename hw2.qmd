@@ -4,6 +4,9 @@ subtitle: "Exploring patterns of environmental justice"
 author: "Nina Berry"
 date: 2026-10-22
 format: typst
+pdf:
+  toc: false
+  code-fold: false
 execute: 
   echo: true
   message: false
