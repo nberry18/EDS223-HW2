@@ -1,4 +1,4 @@
-# EDS223-HW2: Exploring Patterns of Redlining and Environmental Injustice in Los Angeles, CA
+# EDS223-HW2: Exploring Patterns of Redlining and Environmental Injustices in Los Angeles, CA
 
 <img width="4272" height="2848" alt="LA" src="https://github.com/user-attachments/assets/d842ef6e-849e-42fc-98f5-7fbaf43da1a2" />
 
