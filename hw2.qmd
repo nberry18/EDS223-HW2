@@ -6,8 +6,9 @@ date: 2026-10-22
 format:
   html:
     toc: true
-  pdf:
-    toc: true
+pdf:
+  toc: true
+  code-fold: false
 format-links: [typst]
 execute: 
   message: false
@@ -41,7 +42,7 @@ los_angeles <- ejscreen %>%
   dplyr::filter(CNTY_NAME %in% c("Los Angeles County"))
 
 # Check CRS for los_angeles dataset
-st_crs(los_angeles)
+los_angeles_crs <- st_crs(los_angeles)
 
 # Crashes dataset
 crashes <- read_csv(here::here("data", "Crashes.csv")) |>  
@@ -55,7 +56,7 @@ crashes <- read_csv(here::here("data", "Crashes.csv")) |>
 redlining_la <- sf::st_read(here::here("data", "mapping-inequality-los-angeles.json"))
 
 # Check CRS for redlining_la dataset
-st_crs(redlining_la)
+redlining_la_crs <- st_crs(redlining_la)
 
 # Transform Redlining LA dataset into same CRS as EJScreen dataset
 redlining_la <- st_transform(redlining_la, crs = st_crs(los_angeles))
@@ -126,14 +127,6 @@ gt(ejscreen_redlining_percent) |>
   tab_header(title = 'Percent of Census Block Groups Within Each HOLC grade in Los Angeles, CA')
 
 ```
-
-|grade         |    n|  percent|
-|:-------------|----:|--------:|
-|A             |  449|  4.99555|
-|B             | 1239| 13.78505|
-|C             | 3058| 34.02314|
-|D             | 1346| 14.97552|
-|No HOLC Grade | 2896| 32.22074|
 
 ## Visualizations summarizing the percentages of Low Life Expectancy, and Low Income within each HOLC grades 
 ```{r}
