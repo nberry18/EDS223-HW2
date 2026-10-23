@@ -212,7 +212,7 @@ gt(crashes_redlining_percent) |>
 ```
 
 ```{r}
-# Graph 
+# Graph of Pedestrian and Bicycle Accidents per HOLC Grade in Los Angeles, CA
 ggplot(crashes_redlining_percent, aes(x = Grade, y = Percent, fill = Grade)) +
   geom_col() +
   labs(
