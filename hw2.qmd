@@ -3,15 +3,15 @@ title: "EDS 223 Homework Assignment #2"
 subtitle: "Exploring patterns of environmental justice"
 author: "Nina Berry"
 date: 2026-10-22
-format: typst
-pdf:
-  toc: false
-  code-fold: false
+format:
+  html:
+    toc: true
+  pdf:
+    toc: true
+format-links: [typst]
 execute: 
-  echo: true
   message: false
   warning: false 
-  results: hide
 ---
 
 ```{r}
@@ -221,5 +221,6 @@ ggplot(crashes_redlining_percent, aes(x = Grade, y = Percent, fill = Grade)) +
     y = 'Percent',
     fill = 'HOLC Grade'
   ) +
-  scale_fill_manual(values = holc_palette)
+  scale_fill_manual(values = holc_palette)  
+
 ```
