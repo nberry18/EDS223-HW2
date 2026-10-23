@@ -1,5 +1,19 @@
+---
+title: "EDS 223 Homework Assignment #2"
+subtitle: "Exploring patterns of environmental justice"
+author: "Nina Berry"
+date: 2026-10-22
+format: typst
+execute: 
+  echo: true
+  message: false
+  warning: false 
+  results: hide
+---
 
 ```{r}
+#| message: false
+#| warning: false
 library(tidyverse)
 library(sf)
 library(here)
@@ -10,6 +24,7 @@ library(knitr)
 library(gt)
 ```
 
+## Read-in data, check and transform CRS
 ```{r}
 # EJ Screen
 ejscreen <- sf::st_read(here::here("data", "EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb")) 
@@ -22,41 +37,58 @@ california <- ejscreen %>%
 los_angeles <- ejscreen %>%
   dplyr::filter(CNTY_NAME %in% c("Los Angeles County"))
 
+# Check CRS for los_angeles dataset
+st_crs(los_angeles)
+
 # Crashes dataset
 crashes <- read_csv(here::here("data", "Crashes.csv")) |>  
   as_tibble() |>
   drop_na(POINT_X) |>
   drop_na(POINT_Y) |> 
-  st_as_sf(coords = c("POINT_X", "POINT_Y"), crs = 4326, remove = FALSE) |> 
-  st_transform(crs = st_crs(los_angeles))
+  st_as_sf(coords = c("POINT_X", "POINT_Y"), crs = 4326, remove = FALSE) |> # Set CRS to 4326 so point calibrate to latitude and longitude
+  st_transform(crs = st_crs(los_angeles)) # Transform CRS to match EJ Screen Los Angeles dataset
 
 # LA Redlining dataset
 redlining_la <- sf::st_read(here::here("data", "mapping-inequality-los-angeles.json"))
-```
 
-```{r}
-# Check CRS for each dataset
-st_crs(los_angeles)
+# Check CRS for redlining_la dataset
 st_crs(redlining_la)
-st_crs(crashes)
 
 # Transform Redlining LA dataset into same CRS as EJScreen dataset
 redlining_la <- st_transform(redlining_la, crs = st_crs(los_angeles))
 
-# Boolen check if CRS match between 2 datasets
-st_crs(los_angeles) == st_crs(redlining_la)
-st_crs(los_angeles) == st_crs(crashes)
 ```
 
+## Warning message to check CRS
 ```{r}
+# Warning message to check if CRS of datasets match
+if(st_crs(los_angeles) == st_crs(redlining_la)) {
+  print("CRS matches")
+} else {
+  warning("CRS does not match")
+}
+
+# Warning message to check if CRS of datasets match
+if(st_crs(los_angeles) == st_crs(crashes)) {
+  print("CRS matches")
+} else {
+  warning("CRS does not match")
+}
+```
+
+## Palette for maps and graphs 
+```{r}
+# Palette for grades of redlining_la dataset
 holc_palette <- c(
       "A" = "#1a63e0",
       "B" = "#20e050",
       "C" = "#ffff77",
       "D" = "#e01044",
+      "No HOLC Grade" = "#c8c1c3",
       "Missing" = "#c8c1c3")
 ```
 
+## Map of historical redlining neighborhoods by HOLC grade in Los Angeles, CA
 ```{r}
 tm_shape(redlining_la) +
   tm_polygons(fill = "grade",
@@ -64,31 +96,33 @@ tm_shape(redlining_la) +
     palette = holc_palette
   ) +
   tm_title("Historical Redlining in Los Angeles, California") +
-  tm_basemap("OpenStreetMap", alpha = 0.6) 
+  tm_basemap("OpenStreetMap", alpha = 0.6) +
+  tm_compass() +
+  tm_scalebar()
 ```
 
-Create table summary of HOLC grades and census blocks
-
+## Table summary of the percentage of census block groups that fall within each HOLC grade in Los Angeles, CA
 ```{r}
+# Left join EJ Screen Los Angeles County dataset with Redlining LA dataset
 join_ejscreen_redlining <- st_join(los_angeles, redlining_la)
 
+# Drop geometry to act as a tidyverse dataframe
 ejscreen_redlining <- st_drop_geometry(join_ejscreen_redlining)
 
-glimpse(ejscreen_redlining)
-
-# the percent of census black groups that don’t fall within a HOLC grade in your table
-
+# Summary table of percentage of census block groups that fall within each HOLC grade
 ejscreen_redlining_percent <- ejscreen_redlining |>
   mutate(
     grade = ifelse(is.na(grade), "No HOLC Grade", grade)
   ) |>
-  count(grade) |>
-  mutate(percent = (n / sum(n)) * 100)
+  count(grade) |> # Counting number of grade types that have census block groups
+  mutate(percent = (n / sum(n)) * 100) |> 
+  select(-n) |> # Removing count number in table
+  rename(Grade = grade, Percent = percent)
 
-gt(ejscreen_redlining_percent)
+gt(ejscreen_redlining_percent) |> 
+  tab_header(title = 'Percent of Census Block Groups Within Each HOLC grade in Los Angeles, CA')
 
 ```
-
 
 |grade         |    n|  percent|
 |:-------------|----:|--------:|
@@ -98,63 +132,91 @@ gt(ejscreen_redlining_percent)
 |D             | 1346| 14.97552|
 |No HOLC Grade | 2896| 32.22074|
 
-Create at least two visualizations summarizing current conditions (from the EJScreen data) within HOLC grades using the mean of the following variables (you may combine variables in a single visualization or look at a single variable per plot)
-
-Use ggplot for your visualizations! You will first need to calculate mean of each variable grouped by HOLC grade.
-
+## Visualizations summarizing the percentages of Low Life Expectancy, and Low Income within each HOLC grades 
 ```{r}
-PM25_grade <- ejscreen_redlining |> 
-  group_by(grade) |> 
-  summarise(PM25 = mean(PM25), na.rm = TRUE)
-
-ggplot(PM25_grade, mapping = aes(x = grade, y = PM25)) +
-  geom_col()
-
+# Percent of Low Life Expectancy by Grade
 life_exp_grade <- ejscreen_redlining |> 
   group_by(grade) |> 
-  summarise(life_exp = mean(LIFEEXPPCT, na.rm = TRUE))
+  drop_na(grade) |> 
+  summarise(life_exp = mean(LIFEEXPPCT, na.rm = TRUE)*100) 
 
-ggplot(life_exp_grade, mapping = aes(x = grade, y = life_exp)) +
-  geom_col()
+gt(life_exp_grade)
 
+ggplot(life_exp_grade, mapping = aes(x = grade, y = life_exp, fill = grade)) +
+  geom_col() +
+  labs(
+    title = 'Average % of Life Expectancy by HOLC Grade in Los Angeles, CA',
+    x = 'HOLC Grade',
+    y = 'Percent',
+    fill = 'HOLC Grade'
+  ) +
+  scale_fill_manual(values = holc_palette)
+
+# Percent of Low Income Households by Grade
 low_income_grade <- ejscreen_redlining |> 
   group_by(grade) |> 
+  drop_na(grade) |> 
   summarise(low_income = (mean(LOWINCPCT) * 100), na.rm = TRUE)
 
-ggplot(low_income_grade, mapping = aes(x = grade, y = low_income)) +
-  geom_col()
+gt(low_income_grade)
+
+ggplot(low_income_grade, mapping = aes(x = grade, y = low_income, fill = grade)) +
+  geom_col() +
+  labs(
+    title = 'Average % of Low Income by HOLC Grade in Los Angeles, CA',
+    x = 'HOLC Grade',
+    y = 'Percent',
+    fill = 'HOLC Grade'
+  ) +
+  scale_fill_manual(values = holc_palette)
 
 ```
 
+## Results Summary
+Redlined neighborhoods are neighborhoods that were historically marked as risky for mortgage lending because of racist and classist policies that discriminated against residents based on their racial, ethnic, and/ or economic background. These discriminatory practices contributed to environmental injustice, as redlined areas often experienced greater environmental burdens. The EJ Screen Low Life Expectancy data and Low Income Households data supported the claim that households located in the hazardous, redlined neighborhoods (Grade D) has a higher percentage of low-income household at 39.19% and has a higher percentage of low life expectancy at 17.97%. Grade Athe group with the best for mortgage lending and investment, demonstrated that the lowest percent of low-income households at 14.98% and lowest percentage of Low Life Expectancy of 14.28%. Lower life expectancy in redlined neighborhoods may be associated with various environmental factors, including closer proximity to toxic waste sites, higher levels of pollution, and reduced protection from environmental contaminants. These findings suggest that the legacy of redlining continues to contribute to socioeconomic and health disparities in affected communities today.
+
+
+## Figure summarizing the percent of Pedestrian and Bicycle Accidents within each HOLC grade
 ```{r}
-
-# A figure summarizing the percent of observations within redlined neighborhoods within each HOLC grade
-
-# Filter to two columns I want
+# Filter to columns I want that describe the number of Pedestrian and Bicycle Accidents
 select_crashes <- crashes |> 
-  select(POINT_X, POINT_Y, PEDESTRIAN_ACCIDENT, BICYCLE_ACCIDENT)
+  select(POINT_X, POINT_Y, PEDESTRIAN_ACCIDENT, BICYCLE_ACCIDENT) 
 
-# drop na or change them under a different name?
-
+# Classify NAs as No Accident in PEDESTRIAN_ACCIDENT and BICYCLE_ACCIDENT columns
 select_crashes <- select_crashes |> 
   mutate(PEDESTRIAN_ACCIDENT = ifelse(is.na(PEDESTRIAN_ACCIDENT), "No accident", PEDESTRIAN_ACCIDENT)) |> 
   mutate(BICYCLE_ACCIDENT = ifelse(is.na(BICYCLE_ACCIDENT), "No accident", BICYCLE_ACCIDENT))
 
-# join datasets/ drop geometry
-
+# Join datasets and drop geometry
 join_crashes_redlining <- st_join(select_crashes, redlining_la) |> 
   st_drop_geometry()
 
-# Percent table
-
+# Percent table describing the percent of observations within each HOLC grade
 crashes_redlining_percent <- join_crashes_redlining |>
   mutate(
     grade = ifelse(is.na(grade), "No HOLC Grade", grade)
-  ) |> 
+  ) |>  
   filter(PEDESTRIAN_ACCIDENT == "Y" | BICYCLE_ACCIDENT == "Y") |>
   count(grade) |>
-  mutate(percent = (n / sum(n)) * 100)
+  mutate(percent = (n / sum(n)) * 100) |> 
+  select(-n) |> 
+  rename(Grade = grade, Percent = percent)
 
-gt(crashes_redlining_percent)
+# Table
+gt(crashes_redlining_percent) |> 
+  tab_header(title = 'Percent of Pedestrian and Bicycle Accidents Within Each HOLC grade in Los Angeles, CA')
 
+```
+
+```{r}
+# Graph 
+ggplot(crashes_redlining_percent, aes(x = Grade, y = Percent, fill = Grade)) +
+  geom_col() +
+  labs(
+    title = 'Pedestrian and Bicycle Accidents per HOLC Grade in Los Angeles, CA',
+    x = 'HOLC Grade',
+    y = 'Percent',
+    fill = 'HOLC Grade'
+  ) +
+  scale_fill_manual(values = holc_palette)
 ```
