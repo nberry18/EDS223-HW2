@@ -3,16 +3,11 @@ title: "EDS 223 Homework Assignment #2"
 subtitle: "Exploring patterns of environmental justice"
 author: "Nina Berry"
 date: 2026-10-22
-format:
-  html:
-    toc: true
-pdf:
-  toc: true
-  code-fold: false
-format-links: [typst]
-execute: 
+format: typst
+execute:
+  echo: true
+  warning: true
   message: false
-  warning: false 
 ---
 
 ```{r}
@@ -134,7 +129,7 @@ gt(ejscreen_redlining_percent) |>
 life_exp_grade <- ejscreen_redlining |> 
   group_by(grade) |> 
   drop_na(grade) |> 
-  summarise(life_exp = mean(LIFEEXPPCT, na.rm = TRUE)*100) 
+  summarise(life_exp = mean(P_LIFEEXPPCT, na.rm = TRUE)) 
 
 gt(life_exp_grade)
 
@@ -169,7 +164,7 @@ ggplot(low_income_grade, mapping = aes(x = grade, y = low_income, fill = grade))
 ```
 
 ## Results Summary
-Redlined neighborhoods are neighborhoods that were historically marked as risky for mortgage lending because of racist and classist policies that discriminated against residents based on their racial, ethnic, and/ or economic background. These discriminatory practices contributed to environmental injustice, as redlined areas often experienced greater environmental burdens. The EJ Screen Low Life Expectancy data and Low Income Households data supported the claim that households located in the hazardous, redlined neighborhoods (Grade D) has a higher percentage of low-income household at 39.19% and has a higher percentage of low life expectancy at 17.97%. Grade Athe group with the best for mortgage lending and investment, demonstrated that the lowest percent of low-income households at 14.98% and lowest percentage of Low Life Expectancy of 14.28%. Lower life expectancy in redlined neighborhoods may be associated with various environmental factors, including closer proximity to toxic waste sites, higher levels of pollution, and reduced protection from environmental contaminants. These findings suggest that the legacy of redlining continues to contribute to socioeconomic and health disparities in affected communities today.
+Redlined neighborhoods are neighborhoods that were historically marked as risky for mortgage lending because of racist and classist policies that discriminated against residents based on their racial, ethnic, and/ or economic background. These discriminatory practices contributed to environmental injustice, as redlined areas often experienced greater environmental burdens. The EJ Screen Percentile of Low Life Expectancy data and Low Income Households data supported the claim that households located in the hazardous, redlined neighborhoods (Grade D) has a higher percentage of low-income household at 39.19% and has a higher percentile of low life expectancy at 53.04%. Grade A, the group with the best for mortgage lending and investment, demonstrated that the lowest percent of low-income households at 14.98% and lowest percentile of Low Life Expectancy of 23.75%. Lower life expectancy in redlined neighborhoods may be associated with various environmental factors, including closer proximity to toxic waste sites, higher levels of pollution, and reduced protection from environmental contaminants. These findings suggest that the legacy of redlining continues to contribute to socioeconomic and health disparities in affected communities today.
 
 
 ## Figure summarizing the percent of Pedestrian and Bicycle Accidents within each HOLC grade
@@ -183,10 +178,10 @@ select_crashes <- select_crashes |>
   mutate(PEDESTRIAN_ACCIDENT = ifelse(is.na(PEDESTRIAN_ACCIDENT), "No accident", PEDESTRIAN_ACCIDENT)) |> 
   mutate(BICYCLE_ACCIDENT = ifelse(is.na(BICYCLE_ACCIDENT), "No accident", BICYCLE_ACCIDENT))
 
-# Join datasets and drop geometry
-join_crashes_redlining <- st_join(select_crashes, redlining_la) |> 
+# Inner join datasets and drop geometry
+join_crashes_redlining <- st_join(select_crashes, redlining_la, left = FALSE) |> 
   st_drop_geometry()
-
+ 
 # Percent table describing the percent of observations within each HOLC grade
 crashes_redlining_percent <- join_crashes_redlining |>
   mutate(
@@ -219,4 +214,24 @@ ggplot(crashes_redlining_percent, aes(x = Grade, y = Percent, fill = Grade)) +
 ```
 
 ## Results Summary
-This graph shows that Grade C (27.27%) and Grade D (13.69%) neighborhoods had the highest percentages of pedestrian and bicycle accidents, while Grade A (1.08%) and Grade B (5.39%) neighborhoods had the lowest percentages. These findings suggest that neighborhoods classified as declining or hazardous may experience conditions that increase the likelihood of pedestrian and bicycle accidents, such as poorly maintained roads and sidewalks, inadequate pedestrian infrastructure, and limited access to bike lanes. 
+This graph shows that Grade C (51.37%) and Grade D (25.79%) neighborhoods had the highest percentages of pedestrian and bicycle accidents, while Grade A (2.04%) and Grade B (10.39%) neighborhoods had the lowest percentages. These findings suggest that neighborhoods classified as declining or hazardous may experience conditions that increase the likelihood of pedestrian and bicycle accidents, such as poorly maintained roads and sidewalks, inadequate pedestrian infrastructure, and limited access to bike lanes. 
+
+## Revision Explanations:
+
+Visualizing at least two conditions:
+
+I incorrectly used the wrong column `LIFEEXPECT` to demonstrate percentile of low life expectancy by HOLC grade. I updated the analysis and figure to use data from `P_LIFEEXPPCT`. This analysis based on average `P_LIFEEXPCT` better demonstrates how the percentile of low life expectancy varied across HOLC grades, increasing from 23.76% in Grade A neighborhoods to 53.04% in Grade D neighborhoods. This pattern indicates that areas historically assigned lower HOLC grades tend to experience poorer life expectancy-related outcomes than areas assigned higher grades.
+
+Figure of percent of  accidents within each HOLC grade and Appropriate Spatial Operations correction:
+
+I originally used a left join, which retained all crashes, including those that did not match a HOLC redlining area. This was incorrect because the analysis required only crashes that could be assigned to a HOLC grade. Using an inner join (left = FALSE) keeps only crashes with matching redlining polygons, allowing the figure to correctly summarize the percentage of pedestrian and bicycle accidents within each HOLC grade.
+
+  Inner join:
+      `join_crashes_redlining <- st_join(select_crashes, redlining_la, left = FALSE) |> 
+          st_drop_geometry()`
+
+
+
+
+
+
